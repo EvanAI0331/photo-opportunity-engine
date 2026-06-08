@@ -11,6 +11,8 @@ from .historical_weather_connector import fetch_historical_weather
 from .opportunity_database import DB_PATH, OpportunityDatabase
 from .opportunity_engine import build_features
 
+SPOTS_PATH = DB_PATH.parents[0] / "photo_spots.json"
+
 
 class PhotoLibraryEnrichmentWorker:
     def __init__(self) -> None:
@@ -55,19 +57,34 @@ class PhotoLibraryEnrichmentWorker:
             self.status["running"] = False
 
 
+def load_spots_by_id() -> dict[str, dict[str, Any]]:
+    if not SPOTS_PATH.exists():
+        return {}
+    spots = json.loads(SPOTS_PATH.read_text(encoding="utf-8"))
+    return {spot["spot_id"]: spot for spot in spots}
+
+
 def pending_rows(limit: int) -> list[sqlite3.Row]:
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
         return conn.execute(
             """
-            select o.source, o.source_photo_id, o.lat, o.lng, o.taken_at, s.payload_json as spot_payload
-            from photo_observations o
-            left join photo_context_enrichment e
-              on e.source = o.source and e.source_photo_id = o.source_photo_id
-            left join spot_photo_samples s
-              on s.source = o.source and s.source_photo_id = o.source_photo_id
+            select
+              s.spot_id,
+              s.distance_m,
+              s.payload_json as sample_payload,
+              o.source,
+              o.source_photo_id,
+              o.lat as photo_lat,
+              o.lng as photo_lng,
+              o.taken_at
+            from spot_photo_samples s
+            join photo_observations o
+              on o.source = s.source and o.source_photo_id = s.source_photo_id
+            left join photo_spot_context_enrichment e
+              on e.spot_id = s.spot_id and e.source = s.source and e.source_photo_id = s.source_photo_id
             where e.source_photo_id is null
-            group by o.source, o.source_photo_id
+            order by o.taken_at desc, s.spot_id
             limit ?
             """,
             (limit,),
@@ -79,9 +96,9 @@ def remaining_unenriched_count() -> int:
         return conn.execute(
             """
             select count(*)
-            from photo_observations o
-            left join photo_context_enrichment e
-              on e.source = o.source and e.source_photo_id = o.source_photo_id
+            from spot_photo_samples s
+            left join photo_spot_context_enrichment e
+              on e.spot_id = s.spot_id and e.source = s.source and e.source_photo_id = s.source_photo_id
             where e.source_photo_id is null
             """
         ).fetchone()[0]
@@ -93,25 +110,25 @@ async def enrich_batch(limit: int, subject: str = "sunset_landscape") -> dict[st
     failed = 0
     failures = []
     rows = pending_rows(limit)
+    spots_by_id = load_spots_by_id()
     for row in rows:
         try:
             when = datetime.fromisoformat(str(row["taken_at"]).replace("Z", "+00:00"))
-            weather = await fetch_historical_weather(float(row["lat"]), float(row["lng"]), when)
-            astronomy = await fetch_astronomy(float(row["lat"]), float(row["lng"]), when)
-            spot_payload = json.loads(row["spot_payload"]) if row["spot_payload"] else {}
-            spot = {
-                "spot_id": spot_payload.get("spot_id"),
-                "name": spot_payload.get("spot_name"),
-                "lat": float(row["lat"]),
-                "lng": float(row["lng"]),
-                "best_directions_deg": [],
-            }
+            spot = dict(spots_by_id.get(row["spot_id"]) or {})
+            if not spot:
+                sample_payload = json.loads(row["sample_payload"]) if row["sample_payload"] else {}
+                spot = {"spot_id": row["spot_id"], "name": sample_payload.get("spot_name"), "subjects": [], "best_directions_deg": []}
+            spot["distance_m"] = float(row["distance_m"])
+            lat = float(spot.get("lat") or row["photo_lat"])
+            lng = float(spot.get("lng") or row["photo_lng"])
+            weather = await fetch_historical_weather(lat, lng, when)
+            astronomy = await fetch_astronomy(lat, lng, when)
             features = build_features(weather, astronomy, {}, [spot], when, subject)
-            db.upsert_context_enrichment(row["source"], row["source_photo_id"], "enriched", weather, astronomy, features)
+            db.upsert_spot_context_enrichment(row["spot_id"], row["source"], row["source_photo_id"], "enriched", weather, astronomy, features)
             enriched += 1
         except Exception as exc:
-            db.upsert_context_enrichment(row["source"], row["source_photo_id"], "failed", None, None, None, "context_enrichment_failed")
-            failure = {"source": row["source"], "source_photo_id": row["source_photo_id"], "error": str(exc)}
+            db.upsert_spot_context_enrichment(row["spot_id"], row["source"], row["source_photo_id"], "failed", None, None, None, "spot_context_enrichment_failed")
+            failure = {"spot_id": row["spot_id"], "source": row["source"], "source_photo_id": row["source_photo_id"], "error": str(exc)}
             failures.append(failure)
             failed += 1
     return {"processed": len(rows), "enriched": enriched, "failed": failed, "failures": failures[:20], "stats": db.stats()}

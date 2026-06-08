@@ -66,6 +66,18 @@ class OpportunityDatabase:
                   updated_at text not null,
                   primary key (source, source_photo_id)
                 );
+                create table if not exists photo_spot_context_enrichment (
+                  spot_id text not null,
+                  source text not null,
+                  source_photo_id text not null,
+                  weather_json text,
+                  astronomy_json text,
+                  feature_json text,
+                  status text not null,
+                  failure_state text,
+                  updated_at text not null,
+                  primary key (spot_id, source, source_photo_id)
+                );
                 create table if not exists photo_quality_labels (
                   source text not null,
                   source_photo_id text not null,
@@ -154,6 +166,44 @@ class OpportunityDatabase:
                 ),
             )
 
+    def upsert_spot_context_enrichment(
+        self,
+        spot_id: str,
+        source: str,
+        source_photo_id: str,
+        status: str,
+        weather: dict[str, Any] | None,
+        astronomy: dict[str, Any] | None,
+        features: dict[str, Any] | None,
+        failure_state: str | None = None,
+    ) -> None:
+        with self.connect() as conn:
+            conn.execute(
+                """
+                insert into photo_spot_context_enrichment
+                (spot_id, source, source_photo_id, weather_json, astronomy_json, feature_json, status, failure_state, updated_at)
+                values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                on conflict(spot_id, source, source_photo_id) do update set
+                  weather_json=excluded.weather_json,
+                  astronomy_json=excluded.astronomy_json,
+                  feature_json=excluded.feature_json,
+                  status=excluded.status,
+                  failure_state=excluded.failure_state,
+                  updated_at=excluded.updated_at
+                """,
+                (
+                    spot_id,
+                    source,
+                    source_photo_id,
+                    json.dumps(weather, ensure_ascii=False) if weather is not None else None,
+                    json.dumps(astronomy, ensure_ascii=False) if astronomy is not None else None,
+                    json.dumps(features, ensure_ascii=False) if features is not None else None,
+                    status,
+                    failure_state,
+                    now_iso(),
+                ),
+            )
+
     def upsert_quality_label(self, source: str, source_photo_id: str, quality_label: int, quality_score: float, label_source: str, payload: dict[str, Any]) -> None:
         with self.connect() as conn:
             conn.execute(
@@ -193,6 +243,14 @@ class OpportunityDatabase:
             )
 
     def stats(self) -> dict[str, int]:
-        tables = ["photo_observations", "osm_place_features", "photo_context_enrichment", "photo_quality_labels", "spot_photo_samples", "cold_start_runs"]
+        tables = [
+            "photo_observations",
+            "osm_place_features",
+            "photo_context_enrichment",
+            "photo_spot_context_enrichment",
+            "photo_quality_labels",
+            "spot_photo_samples",
+            "cold_start_runs",
+        ]
         with self.connect() as conn:
             return {table: conn.execute(f"select count(*) from {table}").fetchone()[0] for table in tables}

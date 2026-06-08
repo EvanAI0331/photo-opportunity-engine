@@ -67,7 +67,9 @@ Tables:
 - `photo_observations`
 - `osm_place_features`
 - `photo_context_enrichment`
+- `photo_spot_context_enrichment`
 - `photo_quality_labels`
+- `spot_photo_samples`
 - `cold_start_runs`
 
 Runtime databases are ignored by git and release packages.
@@ -122,7 +124,7 @@ Requires `FLICKR_API_KEY`.
 
 ## Factor Research
 
-The factor research loop reads photo observations joined with enrichment and quality labels, then updates:
+The factor research loop reads spot-photo context rows joined with quality labels, then updates:
 
 ```text
 data/factor_registry.json
@@ -154,6 +156,14 @@ Current quality labels are heuristics:
 - iNaturalist: favorites + photo count
 - Flickr legacy: views + favorites
 
+Validation unit:
+
+```text
+spot_id + source + source_photo_id
+```
+
+This keeps spot-specific features such as `direction_match_score`, `travel_cost_score`, and `spot_subject_match_score` tied to the correct camera position. Landscape factors admit Wikimedia Commons and future `user_photo` labels by default; iNaturalist labels are reserved for nature/wildlife/birding style subjects unless a factor explicitly changes that policy.
+
 Replace these with manual scoring or an aesthetic model when available.
 
 ## Background Enrichment
@@ -166,7 +176,7 @@ curl "http://127.0.0.1:8001/photo-library/enrichment/status"
 curl "http://127.0.0.1:8001/opportunity-db/stats"
 ```
 
-The worker processes only observations with no existing context row. Rows marked `failed` are preserved as evidence instead of being silently retried forever.
+The worker processes only `spot_photo_samples` with no existing spot context row. Rows marked `failed` are preserved as evidence instead of being silently retried forever.
 
 ## Agent-Guided Factor Sampling
 
