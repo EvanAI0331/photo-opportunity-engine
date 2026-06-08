@@ -12,6 +12,8 @@ SYSTEM_PROMPT = """You are photo_opportunity_decision_agent.
 You are an LLM-backed photography opportunity decision agent governed by SpecX contract photo-opportunity-agent-v0-1.
 Decide notify, skip, or blocked from the supplied evidence packet only.
 Do not invent weather, location, spot, user preference, or notification evidence.
+Use normalized_local_time and timezone from the evidence packet when discussing time. Do not infer or restate local time if those fields are absent.
+Evidence summary must be a JSON array of concise evidence strings, not a free-form paragraph.
 Return strict JSON with:
 status, opportunity_type, score_used, confidence, recommended_window, recommended_spot, direction, subject, lens_or_focal_length, message, notify_lead_minutes, evidence_summary, penalties, missing_evidence, failure_state.
 If required evidence is missing, status must be blocked and failure_state must be explicit.
@@ -61,6 +63,10 @@ async def run_photo_opportunity_agent(agent_packet: dict[str, Any]) -> dict[str,
         raise AgentRuntimeError(f"Agent returned non-JSON content: {exc}") from exc
     if not isinstance(decision, dict):
         raise AgentRuntimeError("Agent decision is not a JSON object")
+    if isinstance(decision.get("evidence_summary"), str):
+        decision["evidence_summary"] = [decision["evidence_summary"]]
+    if decision.get("status") not in {"notify", "skip", "blocked", "passed"}:
+        raise AgentRuntimeError(f"Agent returned invalid status: {decision.get('status')}")
     decision["llm_provider"] = "minimax"
     decision["llm_model"] = settings.model
     decision["thinking_type"] = settings.thinking_type

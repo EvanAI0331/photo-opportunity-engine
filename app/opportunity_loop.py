@@ -46,7 +46,8 @@ class OpportunityLoop:
             if response.agent_decision_packet["status"] == "ready_for_agent":
                 try:
                     agent_decision = await run_photo_opportunity_agent(response.agent_decision_packet)
-                    status = "agent_decision_completed"
+                    decision_status = agent_decision.get("status")
+                    status = "agent_decision_completed" if decision_status in {"notify", "skip", "passed"} else "agent_decision_blocked"
                 except AgentRuntimeError as exc:
                     agent_error = str(exc)
                     status = "agent_runtime_blocked"
@@ -70,7 +71,7 @@ class OpportunityLoop:
                 "status": status,
                 "record_id": record_id,
                 "score": response.score.score,
-                "failure_state": "agent_runtime_blocked" if agent_error else response.agent_decision_packet.get("failure_state"),
+                "failure_state": "agent_runtime_blocked" if agent_error else agent_decision.get("failure_state") if status == "agent_decision_blocked" and agent_decision else response.agent_decision_packet.get("failure_state"),
                 "agent_decision": agent_decision,
                 "agent_error": agent_error,
                 "response": payload,

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from .astronomy_connector import fetch_astronomy
 from .geo_connector import fetch_geo
@@ -45,10 +46,19 @@ async def run_opportunity_pipeline(request: OpportunityRequest) -> OpportunityRe
     if not spots.ok:
         missing_sources.append("photo_spot_tool")
     score = score_opportunity(request.subject, request.time, features, astronomy_data, spots_data, missing_sources)
+    timezone_name = weather_data.get("timezone") if weather_data else None
+    normalized_local_time = None
+    if isinstance(timezone_name, str):
+        try:
+            normalized_local_time = request.time.astimezone(ZoneInfo(timezone_name)).isoformat()
+        except ZoneInfoNotFoundError:
+            normalized_local_time = None
     agent_decision_packet: dict[str, Any] = {
         "contract_id": "photo-opportunity-agent-v0-1",
         "status": "ready_for_agent" if score.status == "scored" else "blocked_before_agent",
         "normalized_location_time_radius_subject": request.model_dump(mode="json"),
+        "timezone": timezone_name,
+        "normalized_local_time": normalized_local_time,
         "photographic_feature_packet": features,
         "opportunity_score_packet": score.model_dump(),
         "candidate_photo_spots": spots_data[:5],

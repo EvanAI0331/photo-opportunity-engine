@@ -13,7 +13,7 @@ OVERPASS_ENDPOINTS = [
 
 def build_query(lat: float, lng: float, radius_m: int) -> str:
     return f"""
-[out:json][timeout:25];
+[out:json][timeout:45];
 (
   node["tourism"="viewpoint"](around:{radius_m},{lat},{lng});
   way["tourism"="viewpoint"](around:{radius_m},{lat},{lng});
@@ -23,7 +23,7 @@ def build_query(lat: float, lng: float, radius_m: int) -> str:
   way["bridge"](around:{radius_m},{lat},{lng});
   way["natural"="coastline"](around:{radius_m},{lat},{lng});
 );
-out center tags;
+out center tags 80;
 """
 
 
@@ -32,7 +32,7 @@ async def fetch_geo(lat: float, lng: float, radius_m: int) -> dict[str, Any]:
     errors = []
     payload = None
     endpoint_used = None
-    async with httpx.AsyncClient(timeout=30) as client:
+    async with httpx.AsyncClient(timeout=60) as client:
         for endpoint in OVERPASS_ENDPOINTS:
             try:
                 response = await client.post(

@@ -32,11 +32,13 @@ async def agent_decide(request: OpportunityRequest):
     response = await run_opportunity_pipeline(request)
     try:
         decision = await run_photo_opportunity_agent(response.agent_decision_packet)
+        decision_status = decision.get("status")
+        outer_status = "agent_decision_completed" if decision_status in {"notify", "skip", "passed"} else "agent_decision_blocked"
         return {
-            "status": "agent_decision_completed",
+            "status": outer_status,
             "opportunity": response.model_dump(mode="json"),
             "agent_decision": decision,
-            "failure_state": None,
+            "failure_state": None if outer_status == "agent_decision_completed" else decision.get("failure_state", "agent_decision_blocked"),
         }
     except AgentRuntimeError as exc:
         return {
