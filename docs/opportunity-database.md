@@ -156,6 +156,18 @@ Current quality labels are heuristics:
 
 Replace these with manual scoring or an aesthetic model when available.
 
+## Background Enrichment
+
+For large photo libraries, run context enrichment through the FastAPI backend so the work can continue while you inspect progress:
+
+```bash
+curl -X POST "http://127.0.0.1:8001/photo-library/enrichment/start?batch_size=20&sleep_seconds=1&subject=sunset_landscape"
+curl "http://127.0.0.1:8001/photo-library/enrichment/status"
+curl "http://127.0.0.1:8001/opportunity-db/stats"
+```
+
+The worker processes only observations with no existing context row. Rows marked `failed` are preserved as evidence instead of being silently retried forever.
+
 ## Agent-Guided Factor Sampling
 
 Generate coverage over known spots and historical hourly windows:

@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from .memory_store import MemoryStore
 from .models import FeedbackRequest, LoopRunRequest, LoopStartRequest, OpportunityRequest, OpportunityResponse, ShootingHistoryRequest
 from .opportunity_database import OpportunityDatabase
+from .photo_library_enrichment import photo_library_enrichment_worker, remaining_unenriched_count
 from .agent_runtime import AgentRuntimeError, run_photo_opportunity_agent
 from .opportunity_loop import loop
 from .orchestrator import run_opportunity_pipeline
@@ -104,7 +105,24 @@ async def memory_opportunities(limit: int = 20):
 
 @app.get("/opportunity-db/stats")
 async def opportunity_db_stats():
-    return opportunity_db.stats()
+    return {**opportunity_db.stats(), "remaining_unenriched": remaining_unenriched_count()}
+
+
+@app.post("/photo-library/enrichment/start")
+async def photo_library_enrichment_start(batch_size: int = 50, sleep_seconds: float = 0.5, subject: str = "sunset_landscape"):
+    await photo_library_enrichment_worker.start(batch_size=batch_size, sleep_seconds=sleep_seconds, subject=subject)
+    return {"ok": True, **photo_library_enrichment_worker.status}
+
+
+@app.post("/photo-library/enrichment/stop")
+async def photo_library_enrichment_stop():
+    await photo_library_enrichment_worker.stop()
+    return {"ok": True, **photo_library_enrichment_worker.status}
+
+
+@app.get("/photo-library/enrichment/status")
+async def photo_library_enrichment_status():
+    return {**photo_library_enrichment_worker.status, "remaining_unenriched": remaining_unenriched_count()}
 
 
 @app.post("/feedback")
