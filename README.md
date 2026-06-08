@@ -59,8 +59,7 @@ python3 scripts/cold_start_commons.py \
   --place-key sydney_opera_house \
   --category "Category:Sydney Opera House" \
   --pages 1 \
-  --per-page 50 \
-  --enrich-limit 25
+  --per-page 50
 ```
 
 iNaturalist source for nature/wildlife:
@@ -72,8 +71,7 @@ python3 scripts/cold_start_inaturalist.py \
   --lng 151.2153 \
   --radius-km 10 \
   --pages 1 \
-  --per-page 50 \
-  --enrich-limit 25
+  --per-page 50
 ```
 
 Legacy Flickr source:
@@ -88,7 +86,6 @@ python3 scripts/cold_start_flickr.py \
   --end-date 2026-06-08 \
   --pages 1 \
   --per-page 250 \
-  --enrich-limit 25 \
   --text "Sydney Opera House"
 ```
 
@@ -100,5 +97,6 @@ Flickr requires `FLICKR_API_KEY`. See [docs/opportunity-database.md](docs/opport
 python3 scripts/factor_research_report.py
 ```
 
-The first version validates candidate photography factors against `photo_observations + photo_context_enrichment + photo_quality_labels`.
+The first version validates candidate photography factors against `photo_spot_context_enrichment + photo_quality_labels`.
+The validation unit is `spot_id + source + source_photo_id`.
 It does not train a model. Low sample size means factors remain `candidate`.

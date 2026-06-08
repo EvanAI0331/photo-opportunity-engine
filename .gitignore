@@ -12,5 +12,6 @@ data/photo_opportunity.sqlite3
 data/photo_opportunity.sqlite3-*
 data/osm_geo_cache.json
 data/generated_factor_samples.json
+data/photo_library_report.json
 dist/
 *.zip

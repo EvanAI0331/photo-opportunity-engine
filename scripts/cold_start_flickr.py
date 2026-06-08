@@ -5,7 +5,7 @@ import argparse
 import asyncio
 import json
 import uuid
-from datetime import date, datetime
+from datetime import date
 from pathlib import Path
 import sys
 
@@ -14,19 +14,15 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from app.astronomy_connector import fetch_astronomy
 from app.flickr_connector import FlickrConnectorError
 from app.flickr_connector import search_geotagged_photos
-from app.historical_weather_connector import fetch_historical_weather
 from app.opportunity_database import OpportunityDatabase
-from app.opportunity_engine import build_features
 
 
 async def run(args: argparse.Namespace) -> int:
     db = OpportunityDatabase()
     run_id = f"cold_{uuid.uuid4().hex}"
     inserted = 0
-    enriched = 0
     failures = []
     for page in range(1, args.pages + 1):
         try:
@@ -41,7 +37,7 @@ async def run(args: argparse.Namespace) -> int:
                 text=args.text,
             )
         except FlickrConnectorError as exc:
-            payload = {"inserted": inserted, "enriched": enriched, "failure_state": "blocked_flickr_api_unavailable", "error": str(exc), "stats": db.stats()}
+            payload = {"inserted": inserted, "failure_state": "blocked_flickr_api_unavailable", "error": str(exc), "stats": db.stats()}
             db.insert_cold_start_run(run_id, args.place_key, "blocked", payload)
             print(json.dumps({"run_id": run_id, "status": "blocked", **payload}, ensure_ascii=False, indent=2))
             return 2
@@ -75,22 +71,12 @@ async def run(args: argparse.Namespace) -> int:
                     {"views": item.get("views"), "favorites": item.get("favorites")},
                 )
                 inserted += 1
-                if args.enrich_limit and enriched >= args.enrich_limit:
-                    continue
-                when = datetime.fromisoformat(taken_at)
-                weather = await fetch_historical_weather(lat, lng, when)
-                astronomy = await fetch_astronomy(lat, lng, when)
-                features = build_features(weather, astronomy, {}, [], when)
-                db.upsert_context_enrichment("flickr", str(photo["id"]), "enriched", weather, astronomy, features)
-                enriched += 1
             except Exception as exc:
                 failures.append({"photo_id": photo.get("id"), "error": str(exc)})
-                if photo.get("id"):
-                    db.upsert_context_enrichment("flickr", str(photo["id"]), "failed", None, None, None, "context_enrichment_failed")
         if page >= int(photos.get("pages") or page):
             break
     status = "completed" if not failures else "completed_with_failures"
-    payload = {"inserted": inserted, "enriched": enriched, "failures": failures[:50], "stats": db.stats()}
+    payload = {"inserted": inserted, "failures": failures[:50], "stats": db.stats()}
     db.insert_cold_start_run(run_id, args.place_key, status, payload)
     print(json.dumps({"run_id": run_id, "status": status, **payload}, ensure_ascii=False, indent=2))
     return 0 if status == "completed" else 1
@@ -106,7 +92,6 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--end-date", required=True)
     p.add_argument("--pages", type=int, default=1)
     p.add_argument("--per-page", type=int, default=250)
-    p.add_argument("--enrich-limit", type=int, default=25)
     p.add_argument("--text")
     return p
 

@@ -81,8 +81,7 @@ python3 scripts/cold_start_commons.py \
   --place-key sydney_opera_house \
   --category "Category:Sydney Opera House" \
   --pages 1 \
-  --per-page 50 \
-  --enrich-limit 25
+  --per-page 50
 ```
 
 Suggested categories:
@@ -100,8 +99,7 @@ python3 scripts/cold_start_inaturalist.py \
   --lng 151.2153 \
   --radius-km 10 \
   --pages 1 \
-  --per-page 50 \
-  --enrich-limit 25
+  --per-page 50
 ```
 
 ## Legacy Flickr Run
@@ -116,7 +114,6 @@ python3 scripts/cold_start_flickr.py \
   --end-date 2026-06-08 \
   --pages 1 \
   --per-page 250 \
-  --enrich-limit 25 \
   --text "Sydney Opera House"
 ```
 
