@@ -1,7 +1,7 @@
 {
   "name": "photo",
   "version": "1.0.0",
-  "description": "",
+  "description": "Location-Time-Subject photography opportunity engine with weather, astronomy, geo evidence, factor research, and LLM agent decisions.",
   "main": "index.js",
   "directories": {
     "doc": "docs"
@@ -10,8 +10,17 @@
     "start": "uvicorn app.main:app --port 8001",
     "specx": "./scripts/specx_compile.sh"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "photography",
+    "agent",
+    "fastapi",
+    "weather",
+    "astronomy",
+    "openstreetmap",
+    "wikimedia-commons",
+    "factor-research"
+  ],
+  "author": "EvanAI0331",
   "license": "ISC",
   "dependencies": {
     "suncalc": "^1.9.0"
