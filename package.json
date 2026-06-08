@@ -1,0 +1,19 @@
+{
+  "name": "photo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "start": "uvicorn app.main:app --port 8001",
+    "specx": "./scripts/specx_compile.sh"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "suncalc": "^1.9.0"
+  }
+}

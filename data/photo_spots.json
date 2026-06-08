@@ -1,0 +1,38 @@
+[
+  {
+    "spot_id": "sydney_mrs_macquaries_chair_001",
+    "name": "Mrs Macquarie's Chair",
+    "lat": -33.8592,
+    "lng": 151.2225,
+    "subjects": ["Opera House", "Harbour Bridge"],
+    "best_direction": "west",
+    "best_time": ["sunset", "blue_hour"],
+    "recommended_lens": ["70-200mm", "24-70mm"],
+    "foreground": ["water", "trees", "harbour"],
+    "risk": ["crowded"]
+  },
+  {
+    "spot_id": "sydney_kirribilli_001",
+    "name": "Kirribilli Foreshore",
+    "lat": -33.8487,
+    "lng": 151.2144,
+    "subjects": ["Opera House", "CBD skyline"],
+    "best_direction": "south",
+    "best_time": ["sunrise", "blue_hour", "night"],
+    "recommended_lens": ["24-70mm", "16-35mm"],
+    "foreground": ["water", "harbour"],
+    "risk": ["tripod restrictions possible"]
+  },
+  {
+    "spot_id": "sydney_observatory_hill_001",
+    "name": "Observatory Hill",
+    "lat": -33.8599,
+    "lng": 151.2041,
+    "subjects": ["Harbour Bridge", "harbour"],
+    "best_direction": "north",
+    "best_time": ["sunset", "blue_hour"],
+    "recommended_lens": ["24-70mm", "70-200mm"],
+    "foreground": ["trees", "park"],
+    "risk": ["crowded"]
+  }
+]

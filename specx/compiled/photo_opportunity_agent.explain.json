@@ -1,0 +1,21 @@
+{
+  "ok": true,
+  "result": {
+    "agent_count": 1,
+    "artifact_count": 3,
+    "domain": "photography-opportunity-engine",
+    "failure_state": null,
+    "gate_count": 5,
+    "risk_notes": [],
+    "schema_version": "0.1",
+    "summary": "Govern the LLM-backed photography opportunity decision agent for deciding whether a location-time-subject opportunity is worth notifying to the user.",
+    "task_type": "llm-backed-photo-opportunity-decision",
+    "tool_count": 6,
+    "unsupported_features": [
+      "script-only-agent-decision",
+      "silent-fallback-on-missing-weather",
+      "raw-weather-json-as-final-agent-input"
+    ],
+    "verification_ok": true
+  }
+}

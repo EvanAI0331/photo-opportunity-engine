@@ -1,0 +1,8 @@
+{
+  "ok": true,
+  "result": {
+    "contract_id": "photo-opportunity-agent-v0-1",
+    "schema_version": "0.1",
+    "status": "verified"
+  }
+}

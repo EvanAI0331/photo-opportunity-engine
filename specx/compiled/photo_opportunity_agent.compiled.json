@@ -1,0 +1,141 @@
+{
+  "ok": true,
+  "result": {
+    "agents": [
+      {
+        "agent_id": "photo_opportunity_decision_agent",
+        "execution_spec": "Accept only normalized spatiotemporal context, photographic features, opportunity scoring output, candidate photo spots, and user style evidence. Use tool results as evidence. Decide notify, skip, or blocked. Block on missing required evidence instead of fabricating assumptions. Do not calculate raw weather, astronomy, or geo metrics inside the agent. Do not use hardcoded keyword routing as the core decision path.",
+        "output_spec": "Return a structured decision containing status, opportunity_type, score_used, confidence, recommended_window, recommended_spot, direction, subject, lens_or_focal_length, message, notify_lead_minutes, evidence_summary, penalties, missing_evidence, and failure_state. Passed decisions must have empty failure_state. Blocked or failed decisions must have explicit failure_state.",
+        "role_spec": "LLM-backed photography opportunity decision agent. The agent judges whether a pre-scored location-time-subject photography opportunity is worth notifying. It reasons over photographic meaning, user value, travel cost, shot subject, recommended spot, lens choice, and notification timing. It must rely on specs, skills, and tool evidence."
+      }
+    ],
+    "artifact_plan": [
+      {
+        "artifact_id": "photo_opportunity_decision",
+        "description": "Agent-authored decision on whether to notify the user for a specific location-time-subject opportunity."
+      },
+      {
+        "artifact_id": "notification_plan",
+        "description": "Notification timing, message, destination, camera recommendation, and blocked reasons when applicable."
+      },
+      {
+        "artifact_id": "decision_evidence_packet",
+        "description": "Evidence packet containing normalized spatiotemporal request, photographic features, opportunity scores, candidate spots, and user style context."
+      }
+    ],
+    "contract_id": "photo-opportunity-agent-v0-1",
+    "domain": "photography-opportunity-engine",
+    "evidence_requirements": [
+      "normalized_location_time_radius_subject",
+      "photographic_feature_packet",
+      "opportunity_score_packet",
+      "candidate_photo_spots",
+      "user_style_context",
+      "tool_call_trace"
+    ],
+    "execution_constraints": {
+      "approval_required_before_release": false,
+      "no_fake_success": true,
+      "no_hardcoded_fallback": true,
+      "no_silent_fallback": true
+    },
+    "failure_semantics": {
+      "explicit_failure_state": true,
+      "no_fake_success": true,
+      "no_silent_fallback": true,
+      "on_export_failure": "failed",
+      "on_gate_failure": "blocked",
+      "on_missing_evidence": "blocked"
+    },
+    "gates": [
+      {
+        "condition": "Normalized location, time, radius, and subject are present and internally consistent.",
+        "gate_id": "spatiotemporal_context_gate",
+        "on_failure": "blocked_missing_or_invalid_spatiotemporal_context",
+        "on_pass": "continue_to_feature_evidence_gate"
+      },
+      {
+        "condition": "Weather, astronomy, geo-visibility, photo-spot, and user-style evidence are present or explicitly marked unavailable with reasons.",
+        "gate_id": "evidence_completeness_gate",
+        "on_failure": "blocked_missing_required_evidence",
+        "on_pass": "continue_to_score_gate"
+      },
+      {
+        "condition": "Opportunity scoring output includes type, score, window, direction, supporting evidence, penalties, and insufficient-data flags when applicable.",
+        "gate_id": "opportunity_score_gate",
+        "on_failure": "blocked_invalid_or_missing_opportunity_score",
+        "on_pass": "continue_to_agent_decision_gate"
+      },
+      {
+        "condition": "The final decision is authored by an LLM-backed agent using the required specs and tools, not by keyword routing or script-only heuristics.",
+        "gate_id": "llm_agent_decision_gate",
+        "on_failure": "failed_script_impersonated_agent_decision",
+        "on_pass": "continue_to_notification_gate"
+      },
+      {
+        "condition": "Notification output states notify/skip/block, timing, location, subject, lens recommendation, confidence, evidence, and failure_state when blocked or failed.",
+        "gate_id": "notification_contract_gate",
+        "on_failure": "blocked_invalid_notification_contract",
+        "on_pass": "release_notification_plan"
+      }
+    ],
+    "human_approval": {
+      "before": [],
+      "required": false
+    },
+    "objective": "Govern the LLM-backed photography opportunity decision agent for deciding whether a location-time-subject opportunity is worth notifying to the user.",
+    "plan_id": "plan-photo-opportunity-agent-v0-1",
+    "schema_version": "0.1",
+    "status": "compiled",
+    "task_type": "llm-backed-photo-opportunity-decision",
+    "tools": [
+      "weather_tool",
+      "astronomy_tool",
+      "geo_visibility_tool",
+      "photo_spot_tool",
+      "user_style_tool",
+      "notification_tool"
+    ],
+    "verification_plan": {
+      "required_artifacts": [
+        {
+          "artifact_id": "photo_opportunity_decision",
+          "description": "Agent-authored decision on whether to notify the user for a specific location-time-subject opportunity."
+        },
+        {
+          "artifact_id": "notification_plan",
+          "description": "Notification timing, message, destination, camera recommendation, and blocked reasons when applicable."
+        },
+        {
+          "artifact_id": "decision_evidence_packet",
+          "description": "Evidence packet containing normalized spatiotemporal request, photographic features, opportunity scores, candidate spots, and user style context."
+        }
+      ],
+      "required_checks": [
+        "schema_v0_1",
+        "required_fields",
+        "gate_shape",
+        "failure_semantics",
+        "execution_constraints",
+        "required_agent_three_layer_specs",
+        "llm_agent_decision_gate",
+        "expected_artifacts_present"
+      ],
+      "required_evidence": [
+        "normalized_location_time_radius_subject",
+        "photographic_feature_packet",
+        "opportunity_score_packet",
+        "candidate_photo_spots",
+        "user_style_context",
+        "tool_call_trace"
+      ],
+      "required_gate_checks": [
+        "spatiotemporal_context_gate",
+        "evidence_completeness_gate",
+        "opportunity_score_gate",
+        "llm_agent_decision_gate",
+        "notification_contract_gate"
+      ]
+    }
+  }
+}
