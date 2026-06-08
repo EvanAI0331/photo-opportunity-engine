@@ -34,5 +34,113 @@
     "recommended_lens": ["24-70mm", "70-200mm"],
     "foreground": ["trees", "park"],
     "risk": ["crowded"]
+  },
+  {
+    "spot_id": "sydney_circular_quay_001",
+    "name": "Circular Quay",
+    "lat": -33.8613,
+    "lng": 151.2111,
+    "subjects": ["Opera House", "Harbour Bridge", "ferries"],
+    "best_directions_deg": [20, 80, 280],
+    "best_time": ["sunrise", "sunset", "blue_hour", "night"],
+    "recommended_lens": ["24-70mm", "70-200mm"],
+    "foreground": ["ferries", "water", "promenade"],
+    "risk": ["crowded"]
+  },
+  {
+    "spot_id": "sydney_milsons_point_001",
+    "name": "Milsons Point",
+    "lat": -33.8467,
+    "lng": 151.2114,
+    "subjects": ["Harbour Bridge", "Opera House", "CBD skyline"],
+    "best_directions_deg": [130, 180, 220],
+    "best_time": ["sunrise", "blue_hour", "night"],
+    "recommended_lens": ["16-35mm", "24-70mm"],
+    "foreground": ["water", "bridge"],
+    "risk": ["crowded"]
+  },
+  {
+    "spot_id": "sydney_blues_point_001",
+    "name": "Blues Point Reserve",
+    "lat": -33.8489,
+    "lng": 151.2034,
+    "subjects": ["Harbour Bridge", "CBD skyline"],
+    "best_directions_deg": [120, 170, 210],
+    "best_time": ["sunrise", "blue_hour", "night"],
+    "recommended_lens": ["24-70mm", "70-200mm"],
+    "foreground": ["water", "park"],
+    "risk": ["wind"]
+  },
+  {
+    "spot_id": "sydney_dawes_point_001",
+    "name": "Dawes Point",
+    "lat": -33.8565,
+    "lng": 151.2074,
+    "subjects": ["Harbour Bridge", "Opera House"],
+    "best_directions_deg": [40, 300],
+    "best_time": ["sunset", "blue_hour", "night"],
+    "recommended_lens": ["16-35mm", "24-70mm"],
+    "foreground": ["bridge", "harbour"],
+    "risk": ["crowded"]
+  },
+  {
+    "spot_id": "sydney_bondi_beach_001",
+    "name": "Bondi Beach",
+    "lat": -33.8915,
+    "lng": 151.2767,
+    "subjects": ["beach", "surf", "coastline"],
+    "best_directions_deg": [70, 110],
+    "best_time": ["sunrise", "golden_hour"],
+    "recommended_lens": ["16-35mm", "70-200mm"],
+    "foreground": ["waves", "sand", "pool"],
+    "risk": ["salt spray"]
+  },
+  {
+    "spot_id": "sydney_bronte_beach_001",
+    "name": "Bronte Beach",
+    "lat": -33.9019,
+    "lng": 151.2680,
+    "subjects": ["beach", "ocean pool", "coastline"],
+    "best_directions_deg": [70, 120],
+    "best_time": ["sunrise", "golden_hour"],
+    "recommended_lens": ["16-35mm", "24-70mm"],
+    "foreground": ["pool", "rocks", "waves"],
+    "risk": ["slippery rocks"]
+  },
+  {
+    "spot_id": "sydney_manly_beach_001",
+    "name": "Manly Beach",
+    "lat": -33.7969,
+    "lng": 151.2888,
+    "subjects": ["beach", "surf", "coastline"],
+    "best_directions_deg": [70, 110],
+    "best_time": ["sunrise", "golden_hour"],
+    "recommended_lens": ["16-35mm", "70-200mm"],
+    "foreground": ["waves", "sand"],
+    "risk": ["crowded"]
+  },
+  {
+    "spot_id": "sydney_watsons_bay_001",
+    "name": "Watsons Bay",
+    "lat": -33.8408,
+    "lng": 151.2819,
+    "subjects": ["harbour", "city skyline", "coast"],
+    "best_directions_deg": [240, 280, 310],
+    "best_time": ["sunset", "blue_hour"],
+    "recommended_lens": ["24-70mm", "70-200mm"],
+    "foreground": ["water", "boats", "cliffs"],
+    "risk": ["wind"]
+  },
+  {
+    "spot_id": "sydney_campbells_cove_001",
+    "name": "Campbells Cove",
+    "lat": -33.8568,
+    "lng": 151.2089,
+    "subjects": ["Opera House", "Harbour Bridge", "harbour"],
+    "best_directions_deg": [40, 290],
+    "best_time": ["sunset", "blue_hour", "night"],
+    "recommended_lens": ["24-70mm", "70-200mm"],
+    "foreground": ["water", "boats", "promenade"],
+    "risk": ["crowded"]
   }
 ]

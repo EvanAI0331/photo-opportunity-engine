@@ -28,6 +28,26 @@ async def category_files(category: str, limit: int = 50, cmcontinue: str | None 
     return response.json()
 
 
+async def geosearch_files(lat: float, lng: float, radius_m: int = 1000, limit: int = 50, gscontinue: str | None = None) -> dict[str, Any]:
+    params = {
+        "action": "query",
+        "format": "json",
+        "generator": "geosearch",
+        "ggscoord": f"{lat}|{lng}",
+        "ggsradius": min(radius_m, 10000),
+        "ggsnamespace": "6",
+        "ggslimit": min(limit, 500),
+        "prop": "imageinfo|coordinates",
+        "iiprop": "url|mime|size|metadata|extmetadata|commonmetadata",
+    }
+    if gscontinue:
+        params["ggscontinue"] = gscontinue
+    async with httpx.AsyncClient(timeout=30) as client:
+        response = await client.get(COMMONS_API_URL, params=params, headers={"User-Agent": "photo-opportunity-engine/0.1"})
+        response.raise_for_status()
+    return response.json()
+
+
 def normalize_commons_page(page: dict[str, Any]) -> dict[str, Any] | None:
     imageinfo = (page.get("imageinfo") or [{}])[0]
     coords = page.get("coordinates") or []

@@ -76,6 +76,15 @@ class OpportunityDatabase:
                   updated_at text not null,
                   primary key (source, source_photo_id)
                 );
+                create table if not exists spot_photo_samples (
+                  spot_id text not null,
+                  source text not null,
+                  source_photo_id text not null,
+                  distance_m real not null,
+                  payload_json text not null,
+                  created_at text not null,
+                  primary key (spot_id, source, source_photo_id)
+                );
                 create table if not exists cold_start_runs (
                   run_id text primary key,
                   place_key text not null,
@@ -169,7 +178,21 @@ class OpportunityDatabase:
                 (run_id, place_key, status, json.dumps(payload, ensure_ascii=False), now_iso()),
             )
 
+    def upsert_spot_photo_sample(self, spot_id: str, source: str, source_photo_id: str, distance_m: float, payload: dict[str, Any]) -> None:
+        with self.connect() as conn:
+            conn.execute(
+                """
+                insert into spot_photo_samples
+                (spot_id, source, source_photo_id, distance_m, payload_json, created_at)
+                values (?, ?, ?, ?, ?, ?)
+                on conflict(spot_id, source, source_photo_id) do update set
+                  distance_m=excluded.distance_m,
+                  payload_json=excluded.payload_json
+                """,
+                (spot_id, source, source_photo_id, distance_m, json.dumps(payload, ensure_ascii=False), now_iso()),
+            )
+
     def stats(self) -> dict[str, int]:
-        tables = ["photo_observations", "osm_place_features", "photo_context_enrichment", "photo_quality_labels", "cold_start_runs"]
+        tables = ["photo_observations", "osm_place_features", "photo_context_enrichment", "photo_quality_labels", "spot_photo_samples", "cold_start_runs"]
         with self.connect() as conn:
             return {table: conn.execute(f"select count(*) from {table}").fetchone()[0] for table in tables}
