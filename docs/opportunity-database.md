@@ -4,25 +4,32 @@
 
 Build a cold-start database of real photo observations around a place, then enrich each observation with historical weather and astronomical context.
 
-Example target:
+Target shape:
 
 ```text
-Sydney Opera House
-radius: 2 km
-period: past 5 years
-source: Flickr geotagged public photos
+Spot + Time + Weather + Photo Evidence
 ```
 
 ## Data Sources
 
-Flickr:
+Wikimedia Commons is the preferred photo source:
 
-- geotagged public photos
-- taken time
-- latitude / longitude
-- views
-- tags / owner name
-- optional favorites when available
+- Free and keyless
+- Open API
+- Low legal risk
+- Many files include EXIF/common metadata and GPS
+- Category based queries, for example `Category:Sydney Opera House`
+
+iNaturalist is recommended for nature, wildlife, birding, and observation photography:
+
+- Free and keyless
+- GPS and observation time
+- Photos and species context
+
+Flickr remains a legacy optional connector:
+
+- Requires API key
+- Not the default factor research source
 
 OpenStreetMap / Overpass:
 
@@ -34,6 +41,7 @@ OpenStreetMap / Overpass:
 Open-Meteo Archive:
 
 - historical hourly cloud cover
+- low/mid/high cloud cover
 - visibility
 - humidity
 - precipitation
@@ -64,16 +72,37 @@ Tables:
 
 Runtime databases are ignored by git and release packages.
 
-## Run
-
-Set Flickr key:
+## Wikimedia Commons Run
 
 ```bash
-cp .env.example .env
-# fill FLICKR_API_KEY
+python3 scripts/cold_start_commons.py \
+  --place-key sydney_opera_house \
+  --category "Category:Sydney Opera House" \
+  --pages 1 \
+  --per-page 50 \
+  --enrich-limit 25
 ```
 
-Small verified-style run:
+Suggested categories:
+
+- `Category:Sydney Opera House`
+- `Category:Sydney Harbour Bridge`
+- `Category:Bondi Beach`
+
+## iNaturalist Run
+
+```bash
+python3 scripts/cold_start_inaturalist.py \
+  --place-key sydney_nature \
+  --lat -33.8568 \
+  --lng 151.2153 \
+  --radius-km 10 \
+  --pages 1 \
+  --per-page 50 \
+  --enrich-limit 25
+```
+
+## Legacy Flickr Run
 
 ```bash
 python3 scripts/cold_start_flickr.py \
@@ -89,12 +118,7 @@ python3 scripts/cold_start_flickr.py \
   --text "Sydney Opera House"
 ```
 
-Scaling note:
-
-- Flickr pages can return up to 500 photos each.
-- 100k photos requires pagination and rate-limit-aware batching.
-- Historical enrichment should be batched/cached by `(lat_bucket, lng_bucket, hour)`.
-- Do not claim completion if Flickr key, pagination, or historical enrichment fails.
+Requires `FLICKR_API_KEY`.
 
 ## Factor Research
 
@@ -124,10 +148,26 @@ Initial fields:
 }
 ```
 
-The first quality label is heuristic:
+Current quality labels are heuristics:
 
-```text
-quality_label = views/favorites heuristic
+- Wikimedia Commons: metadata completeness + image dimensions
+- iNaturalist: favorites + photo count
+- Flickr legacy: views + favorites
+
+Replace these with manual scoring or an aesthetic model when available.
+
+## Agent-Guided Factor Sampling
+
+Generate coverage over known spots and historical hourly windows:
+
+```bash
+python3 scripts/generate_factor_samples.py \
+  --lat -33.8568 \
+  --lng 151.2153 \
+  --radius-m 3000 \
+  --max-spots 3 \
+  --days 7 \
+  --output data/generated_factor_samples.json
 ```
 
-Replace this with manual scoring or an aesthetic model when available.
+These samples are for factor coverage and hypothesis generation. Real factor validation still requires photo labels from Wikimedia Commons, iNaturalist, or manually labeled photos.

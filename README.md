@@ -52,6 +52,32 @@ The score engine is not the Agent. Final notification judgment belongs to the LL
 
 ## Cold-Start Opportunity Database
 
+Preferred Wikimedia Commons source, no API key:
+
+```bash
+python3 scripts/cold_start_commons.py \
+  --place-key sydney_opera_house \
+  --category "Category:Sydney Opera House" \
+  --pages 1 \
+  --per-page 50 \
+  --enrich-limit 25
+```
+
+iNaturalist source for nature/wildlife:
+
+```bash
+python3 scripts/cold_start_inaturalist.py \
+  --place-key sydney_nature \
+  --lat -33.8568 \
+  --lng 151.2153 \
+  --radius-km 10 \
+  --pages 1 \
+  --per-page 50 \
+  --enrich-limit 25
+```
+
+Legacy Flickr source:
+
 ```bash
 python3 scripts/cold_start_flickr.py \
   --place-key sydney_opera_house \
@@ -66,7 +92,7 @@ python3 scripts/cold_start_flickr.py \
   --text "Sydney Opera House"
 ```
 
-Requires `FLICKR_API_KEY`. See [docs/opportunity-database.md](docs/opportunity-database.md).
+Flickr requires `FLICKR_API_KEY`. See [docs/opportunity-database.md](docs/opportunity-database.md).
 
 ## Factor Research
 
