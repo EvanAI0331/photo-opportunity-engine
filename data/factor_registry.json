@@ -1,0 +1,61 @@
+[
+  {
+    "factor_id": "sunset_high_cloud_clear_horizon_v1",
+    "subject": "sunset_landscape",
+    "conditions": [
+      {
+        "field": "high_cloud_cover",
+        "op": ">=",
+        "value": 35
+      },
+      {
+        "field": "low_cloud_cover",
+        "op": "<=",
+        "value": 70
+      },
+      {
+        "field": "visibility_km",
+        "op": ">=",
+        "value": 10
+      },
+      {
+        "field": "direction_match_score",
+        "op": ">=",
+        "value": 0.7
+      }
+    ],
+    "hit_rate": 0.0,
+    "lift": 0.0,
+    "false_alert_rate": 0.0,
+    "status": "candidate",
+    "sample_size": 0,
+    "matches": 0
+  },
+  {
+    "factor_id": "blue_hour_known_spot_low_travel_v1",
+    "subject": "sunset_landscape",
+    "conditions": [
+      {
+        "field": "blue_hour",
+        "op": "==",
+        "value": true
+      },
+      {
+        "field": "nearby_spot_count",
+        "op": ">=",
+        "value": 1
+      },
+      {
+        "field": "travel_cost_score",
+        "op": ">=",
+        "value": 0.6
+      }
+    ],
+    "hit_rate": 0.0,
+    "lift": 0.0,
+    "false_alert_rate": 0.0,
+    "status": "candidate",
+    "sample_size": 0,
+    "matches": 0
+  }
+]

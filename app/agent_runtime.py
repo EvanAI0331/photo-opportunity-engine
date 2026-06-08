@@ -6,6 +6,7 @@ from typing import Any
 import httpx
 
 from .config import get_agent_settings
+from .models import AgentDecision
 
 
 SYSTEM_PROMPT = """You are photo_opportunity_decision_agent.
@@ -70,4 +71,7 @@ async def run_photo_opportunity_agent(agent_packet: dict[str, Any]) -> dict[str,
     decision["llm_provider"] = "minimax"
     decision["llm_model"] = settings.model
     decision["thinking_type"] = settings.thinking_type
-    return decision
+    try:
+        return AgentDecision.model_validate(decision).model_dump()
+    except Exception as exc:
+        raise AgentRuntimeError(f"Agent decision schema validation failed: {exc}") from exc

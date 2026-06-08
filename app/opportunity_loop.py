@@ -40,7 +40,7 @@ class OpportunityLoop:
             subject=subject,
         )
         try:
-            response = await run_opportunity_pipeline(request)
+            response = await run_opportunity_pipeline(request, user_id=user_id, store=self.store)
             agent_decision = None
             agent_error = None
             if response.agent_decision_packet["status"] == "ready_for_agent":

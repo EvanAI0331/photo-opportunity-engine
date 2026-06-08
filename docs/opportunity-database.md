@@ -94,3 +94,31 @@ Scaling note:
 - 100k photos requires pagination and rate-limit-aware batching.
 - Historical enrichment should be batched/cached by `(lat_bucket, lng_bucket, hour)`.
 - Do not claim completion if Flickr key, pagination, or historical enrichment fails.
+
+## Factor Research
+
+The factor research loop currently reads persisted `opportunity_records` and updates:
+
+```text
+data/factor_registry.json
+```
+
+Run:
+
+```bash
+python3 scripts/factor_research_report.py
+```
+
+Initial fields:
+
+```json
+{
+  "factor_id": "sunset_high_cloud_clear_horizon_v1",
+  "subject": "sunset_landscape",
+  "conditions": [],
+  "hit_rate": 0.0,
+  "lift": 0.0,
+  "false_alert_rate": 0.0,
+  "status": "candidate"
+}
+```

@@ -1,0 +1,69 @@
+from __future__ import annotations
+
+import sqlite3
+from typing import Any
+
+from app.memory_store import DB_PATH
+
+
+def condition_matches(features: dict[str, Any], condition: dict[str, Any]) -> bool:
+    value = features.get(condition["field"])
+    target = condition["value"]
+    op = condition["op"]
+    if value is None:
+        return False
+    if op == ">=":
+        return value >= target
+    if op == "<=":
+        return value <= target
+    if op == "==":
+        return value == target
+    raise ValueError(f"unsupported op: {op}")
+
+
+def backtest_factor(factor: dict[str, Any]) -> dict[str, Any]:
+    if not DB_PATH.exists():
+        return empty_result(factor)
+    with sqlite3.connect(DB_PATH) as conn:
+        try:
+            rows = conn.execute("select payload_json, score from opportunity_records").fetchall()
+        except sqlite3.OperationalError:
+            return empty_result(factor)
+    total = len(rows)
+    if total == 0:
+        return {**factor, "sample_size": 0, "hit_rate": 0.0, "lift": 0.0, "false_alert_rate": 0.0, "status": "candidate"}
+    matches = 0
+    positives = 0
+    matched_positives = 0
+    for payload_json, score in rows:
+        import json
+
+        payload = json.loads(payload_json)
+        features = payload.get("photographic_features") or {}
+        positive = score >= 0.5
+        positives += int(positive)
+        matched = all(condition_matches(features, condition) for condition in factor.get("conditions", []))
+        matches += int(matched)
+        matched_positives += int(matched and positive)
+    baseline = positives / total if total else 0
+    hit_rate = matched_positives / matches if matches else 0
+    lift = hit_rate / baseline if baseline else 0
+    false_alert_rate = (matches - matched_positives) / matches if matches else 0
+    status = "promising" if matches >= 10 and lift >= 1.2 else "candidate"
+    return {
+        **factor,
+        "sample_size": total,
+        "matches": matches,
+        "hit_rate": round(hit_rate, 3),
+        "lift": round(lift, 3),
+        "false_alert_rate": round(false_alert_rate, 3),
+        "status": status,
+    }
+
+
+def empty_result(factor: dict[str, Any]) -> dict[str, Any]:
+    return {**factor, "sample_size": 0, "matches": 0, "hit_rate": 0.0, "lift": 0.0, "false_alert_rate": 0.0, "status": "candidate"}
+
+
+def backtest_factors(factors: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [backtest_factor(factor) for factor in factors]

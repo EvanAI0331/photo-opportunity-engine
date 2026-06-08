@@ -67,3 +67,12 @@ python3 scripts/cold_start_flickr.py \
 ```
 
 Requires `FLICKR_API_KEY`. See [docs/opportunity-database.md](docs/opportunity-database.md).
+
+## Factor Research
+
+```bash
+python3 scripts/factor_research_report.py
+```
+
+The first version validates candidate photography factors against persisted `opportunity_records`.
+It does not train a model. Low sample size means factors remain `candidate`.

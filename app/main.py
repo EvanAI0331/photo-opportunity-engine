@@ -24,12 +24,12 @@ async def health():
 
 @app.post("/opportunity", response_model=OpportunityResponse)
 async def opportunity(request: OpportunityRequest):
-    return await run_opportunity_pipeline(request)
+    return await run_opportunity_pipeline(request, store=store)
 
 
 @app.post("/agent/decide")
 async def agent_decide(request: OpportunityRequest):
-    response = await run_opportunity_pipeline(request)
+    response = await run_opportunity_pipeline(request, store=store)
     try:
         decision = await run_photo_opportunity_agent(response.agent_decision_packet)
         decision_status = decision.get("status")

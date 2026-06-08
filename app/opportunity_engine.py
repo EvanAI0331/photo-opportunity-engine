@@ -6,6 +6,68 @@ from typing import Any
 from .models import OpportunityScore
 
 
+def angular_distance(a: float, b: float) -> float:
+    return abs((a - b + 180) % 360 - 180)
+
+
+def direction_to_azimuth(direction: str | None) -> float | None:
+    if not direction:
+        return None
+    mapping = {
+        "north": 0,
+        "north-northeast": 22.5,
+        "northeast": 45,
+        "east-northeast": 67.5,
+        "east": 90,
+        "east-southeast": 112.5,
+        "southeast": 135,
+        "south-southeast": 157.5,
+        "south": 180,
+        "south-southwest": 202.5,
+        "southwest": 225,
+        "west-southwest": 247.5,
+        "west": 270,
+        "west-northwest": 292.5,
+        "northwest": 315,
+        "north-northwest": 337.5,
+    }
+    return mapping.get(direction.lower())
+
+
+def direction_match_score(sun_azimuth: Any, spots: list[dict[str, Any]]) -> float:
+    if not isinstance(sun_azimuth, (int, float)) or not spots:
+        return 0.0
+    best = 0.0
+    for spot in spots:
+        target = direction_to_azimuth(spot.get("best_direction"))
+        if target is None:
+            continue
+        best = max(best, max(0.0, 1.0 - angular_distance(float(sun_azimuth), target) / 90.0))
+    return round(best, 2)
+
+
+def spot_subject_match_score(subject: str, spots: list[dict[str, Any]]) -> float:
+    if not spots:
+        return 0.0
+    tokens = set(subject.lower().replace("_", " ").split())
+    best = 0.0
+    for spot in spots:
+        text = " ".join(spot.get("subjects", []) + spot.get("best_time", [])).lower()
+        best = max(best, sum(1 for token in tokens if token in text) / max(len(tokens), 1))
+    return round(min(best, 1.0), 2)
+
+
+def travel_cost_score(spots: list[dict[str, Any]]) -> float:
+    if not spots:
+        return 0.0
+    distance = min(float(spot.get("distance_m", 999999)) for spot in spots)
+    if distance <= 500:
+        return 1.0
+    if distance >= 3000:
+        return 0.0
+    return round(1.0 - ((distance - 500) / 2500), 2)
+
+
 def direction_from_azimuth(degrees: float | None) -> str | None:
     if degrees is None:
         return None
@@ -38,7 +100,14 @@ def in_window(when: datetime, start_iso: str | None, end_iso: str | None) -> boo
     return start <= when <= end
 
 
-def build_features(weather: dict[str, Any] | None, astronomy: dict[str, Any] | None, geo: dict[str, Any] | None, spots: list[dict[str, Any]], when: datetime) -> dict[str, Any]:
+def minutes_until(when: datetime, target_iso: str | None) -> int | None:
+    if not target_iso:
+        return None
+    target = datetime.fromisoformat(target_iso.replace("Z", "+00:00")).astimezone(when.tzinfo)
+    return round((target - when).total_seconds() / 60)
+
+
+def build_features(weather: dict[str, Any] | None, astronomy: dict[str, Any] | None, geo: dict[str, Any] | None, spots: list[dict[str, Any]], when: datetime, subject: str = "sunset_landscape") -> dict[str, Any]:
     weather = weather or {}
     astronomy = astronomy or {}
     geo = geo or {}
@@ -47,6 +116,9 @@ def build_features(weather: dict[str, Any] | None, astronomy: dict[str, Any] | N
     times = astronomy.get("times") or {}
     visibility_m = weather.get("visibility")
     cloud_cover = weather.get("cloud_cover")
+    cloud_low = weather.get("cloud_cover_low")
+    cloud_mid = weather.get("cloud_cover_mid")
+    cloud_high = weather.get("cloud_cover_high")
     humidity = weather.get("relative_humidity_2m")
     precip = weather.get("precipitation_probability")
     wind = weather.get("wind_speed_10m")
@@ -55,11 +127,15 @@ def build_features(weather: dict[str, Any] | None, astronomy: dict[str, Any] | N
         "golden_hour": in_window(when, times.get("goldenHour"), times.get("sunset")) or in_window(when, times.get("sunrise"), times.get("goldenHourEnd")),
         "blue_hour": in_window(when, times.get("dusk"), times.get("night")) or in_window(when, times.get("nightEnd"), times.get("dawn")),
         "sun_azimuth": sun.get("azimuth"),
+        "sun_altitude": sun.get("altitude"),
         "sun_direction": direction_from_azimuth(sun.get("azimuth")),
         "moon_azimuth": moon.get("azimuth"),
         "moon_direction": direction_from_azimuth(moon.get("azimuth")),
         "moon_phase": (astronomy.get("moon_illumination") or {}).get("phase"),
         "cloud_cover": cloud_cover,
+        "low_cloud_cover": cloud_low,
+        "mid_cloud_cover": cloud_mid,
+        "high_cloud_cover": cloud_high,
         "visibility_km": round(visibility_m / 1000, 1) if isinstance(visibility_m, (int, float)) else None,
         "humidity": humidity,
         "precipitation_probability": precip,
@@ -70,6 +146,10 @@ def build_features(weather: dict[str, Any] | None, astronomy: dict[str, Any] | N
         "viewpoint_count": geo.get("viewpoints", 0),
         "bridge_count": geo.get("bridges", 0),
         "nearby_spot_count": len(spots),
+        "direction_match_score": direction_match_score(sun.get("azimuth"), spots),
+        "spot_subject_match_score": spot_subject_match_score(subject, spots),
+        "travel_cost_score": travel_cost_score(spots),
+        "time_to_sunset_minutes": minutes_until(when, times.get("sunset")),
     }
 
 
@@ -122,6 +202,11 @@ def score_opportunity(subject: str, when: datetime, features: dict[str, Any], as
     precip = features["precipitation_probability"]
     reflection = features["water_reflection_score"]
     landmark = features["landmark_visibility_score"] or 0
+    direction_match = features.get("direction_match_score") or 0
+    subject_match = features.get("spot_subject_match_score") or 0
+    travel = features.get("travel_cost_score") or 0
+    high_cloud = features.get("high_cloud_cover")
+    low_cloud = features.get("low_cloud_cover")
     score = 0.0
     evidence = []
     penalties = []
@@ -139,6 +224,13 @@ def score_opportunity(subject: str, when: datetime, features: dict[str, Any], as
     elif cloud < 15 or cloud > 90:
         penalties.append("cloud cover is weak or overcast")
         score -= 0.08
+
+    if isinstance(high_cloud, (int, float)) and high_cloud >= 35:
+        score += 0.08
+        evidence.append("high cloud supports sunset color")
+    if isinstance(low_cloud, (int, float)) and low_cloud >= 80:
+        score -= 0.12
+        penalties.append("low cloud may block horizon light")
 
     if visibility >= 12:
         score += 0.18
@@ -158,6 +250,18 @@ def score_opportunity(subject: str, when: datetime, features: dict[str, Any], as
     if spots:
         score += 0.08
         evidence.append("known photo spot exists in radius")
+    if direction_match >= 0.7:
+        score += 0.14
+        evidence.append("spot direction matches sun direction")
+    elif spots:
+        score -= 0.06
+        penalties.append("spot direction does not match sun direction")
+    if subject_match >= 0.5:
+        score += 0.06
+        evidence.append("spot subjects match requested subject")
+    if travel >= 0.6:
+        score += 0.04
+        evidence.append("nearby spot has low travel cost")
 
     if precip >= 55:
         score -= 0.18

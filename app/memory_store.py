@@ -154,6 +154,27 @@ class MemoryStore:
             ).fetchall()
         return [self._decode(row) for row in rows]
 
+    def user_style_context(self, user_id: str) -> dict[str, Any]:
+        with self.connect() as conn:
+            preferences = self._single_payload(conn, "photo_preferences", "user_id", user_id)
+            lenses = self._single_payload(conn, "lens_preferences", "user_id", user_id)
+            accepted = conn.execute("select count(*) from accepted_alerts where user_id = ?", (user_id,)).fetchone()[0]
+            ignored = conn.execute("select count(*) from ignored_alerts where user_id = ?", (user_id,)).fetchone()[0]
+            favorites = conn.execute("select payload_json from location_favorites where user_id = ? order by created_at desc limit 20", (user_id,)).fetchall()
+        total = accepted + ignored
+        return {
+            "preferred_subjects": preferences.get("preferred_subjects", []) if preferences else [],
+            "preferred_lenses": lenses.get("preferred_lenses", []) if lenses else [],
+            "accepted_alert_rate": round(accepted / total, 3) if total else None,
+            "ignored_alert_rate": round(ignored / total, 3) if total else None,
+            "favorite_spots": [json.loads(row["payload_json"]) for row in favorites],
+        }
+
+    @staticmethod
+    def _single_payload(conn: sqlite3.Connection, table: str, key: str, value: str) -> dict[str, Any]:
+        row = conn.execute(f"select payload_json from {table} where {key} = ?", (value,)).fetchone()
+        return json.loads(row["payload_json"]) if row else {}
+
     @staticmethod
     def _decode(row: sqlite3.Row) -> dict[str, Any]:
         item = dict(row)

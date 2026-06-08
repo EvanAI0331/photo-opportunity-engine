@@ -51,4 +51,6 @@ Tables:
 
 ## Current Limitation
 
-The current system prepares a SpecX-governed `agent_decision_packet`; it does not yet call an LLM-backed Agent runtime or notification provider. Until those are connected, final Agent judgment and push delivery must remain explicit handoff steps, not fake completion.
+The current system calls the LLM-backed Agent runtime when `MINIMAX_API_KEY` is configured. Notification delivery is still an explicit handoff step and must not be reported as completed until a real notification provider is connected.
+
+The loop records connector errors and missing evidence in the persisted payload so blocked runs can be audited.
