@@ -5,7 +5,10 @@ from typing import Any
 import httpx
 
 
-OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+OVERPASS_ENDPOINTS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+]
 
 
 def build_query(lat: float, lng: float, radius_m: int) -> str:
@@ -26,16 +29,28 @@ out center tags;
 
 async def fetch_geo(lat: float, lng: float, radius_m: int) -> dict[str, Any]:
     query = build_query(lat, lng, radius_m)
+    errors = []
+    payload = None
+    endpoint_used = None
     async with httpx.AsyncClient(timeout=30) as client:
-        response = await client.post(
-            OVERPASS_URL,
-            data={"data": query},
-            headers={"User-Agent": "photo-opportunity-engine/0.1"},
-        )
-        response.raise_for_status()
-    payload = response.json()
+        for endpoint in OVERPASS_ENDPOINTS:
+            try:
+                response = await client.post(
+                    endpoint,
+                    data={"data": query},
+                    headers={"User-Agent": "photo-opportunity-engine/0.1"},
+                )
+                response.raise_for_status()
+                payload = response.json()
+                endpoint_used = endpoint
+                break
+            except Exception as exc:
+                errors.append({"endpoint": endpoint, "error": str(exc)})
+    if payload is None:
+        raise RuntimeError(f"Overpass query failed on all endpoints: {errors}")
     elements = payload.get("elements") or []
     summary = {
+        "endpoint": endpoint_used,
         "viewpoints": 0,
         "water": 0,
         "bridges": 0,
