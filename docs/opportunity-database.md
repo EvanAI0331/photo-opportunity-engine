@@ -59,6 +59,7 @@ Tables:
 - `photo_observations`
 - `osm_place_features`
 - `photo_context_enrichment`
+- `photo_quality_labels`
 - `cold_start_runs`
 
 Runtime databases are ignored by git and release packages.
@@ -97,7 +98,7 @@ Scaling note:
 
 ## Factor Research
 
-The factor research loop currently reads persisted `opportunity_records` and updates:
+The factor research loop reads photo observations joined with enrichment and quality labels, then updates:
 
 ```text
 data/factor_registry.json
@@ -122,3 +123,11 @@ Initial fields:
   "status": "candidate"
 }
 ```
+
+The first quality label is heuristic:
+
+```text
+quality_label = views/favorites heuristic
+```
+
+Replace this with manual scoring or an aesthetic model when available.

@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from .time_utils import ensure_timezone_aware
 
@@ -81,6 +81,21 @@ class AgentDecision(BaseModel):
         if info.data.get("status") == "blocked" and not value:
             raise ValueError("blocked decision requires failure_state")
         return value
+
+    @model_validator(mode="after")
+    def validate_status_contract(self):
+        if self.status == "notify":
+            if not self.recommended_spot:
+                raise ValueError("notify decision requires recommended_spot")
+            if self.notify_lead_minutes is None:
+                raise ValueError("notify decision requires notify_lead_minutes")
+            if self.failure_state:
+                raise ValueError("notify decision must not include failure_state")
+        if self.status == "skip" and self.failure_state:
+            raise ValueError("skip decision must not include failure_state")
+        if self.status == "passed" and self.failure_state:
+            raise ValueError("passed decision must not include failure_state")
+        return self
 
 
 class LoopRunRequest(BaseModel):

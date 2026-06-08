@@ -39,10 +39,14 @@ def direction_match_score(sun_azimuth: Any, spots: list[dict[str, Any]]) -> floa
         return 0.0
     best = 0.0
     for spot in spots:
-        target = direction_to_azimuth(spot.get("best_direction"))
-        if target is None:
-            continue
-        best = max(best, max(0.0, 1.0 - angular_distance(float(sun_azimuth), target) / 90.0))
+        targets = spot.get("best_directions_deg")
+        if not isinstance(targets, list):
+            legacy_target = direction_to_azimuth(spot.get("best_direction"))
+            targets = [legacy_target] if legacy_target is not None else []
+        for target in targets:
+            if not isinstance(target, (int, float)):
+                continue
+            best = max(best, max(0.0, 1.0 - angular_distance(float(sun_azimuth), float(target)) / 90.0))
     return round(best, 2)
 
 

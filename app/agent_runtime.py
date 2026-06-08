@@ -72,6 +72,12 @@ async def run_photo_opportunity_agent(agent_packet: dict[str, Any]) -> dict[str,
     decision["llm_model"] = settings.model
     decision["thinking_type"] = settings.thinking_type
     try:
-        return AgentDecision.model_validate(decision).model_dump()
+        validated = AgentDecision.model_validate(decision).model_dump()
     except Exception as exc:
         raise AgentRuntimeError(f"Agent decision schema validation failed: {exc}") from exc
+    expected_score = ((agent_packet.get("opportunity_score_packet") or {}).get("score"))
+    if isinstance(expected_score, (int, float)) and abs(float(validated["score_used"]) - float(expected_score)) > 0.001:
+        raise AgentRuntimeError(
+            f"Agent decision score_used {validated['score_used']} does not match opportunity_score_packet.score {expected_score}"
+        )
+    return validated

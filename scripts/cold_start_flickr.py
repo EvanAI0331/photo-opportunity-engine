@@ -65,6 +65,15 @@ async def run(args: argparse.Namespace) -> int:
                     "payload": photo,
                 }
                 db.upsert_photo_observation(item)
+                quality_score = compute_quality_score(item)
+                db.upsert_quality_label(
+                    "flickr",
+                    str(photo["id"]),
+                    int(quality_score >= 0.65),
+                    quality_score,
+                    "flickr_views_favorites_heuristic_v1",
+                    {"views": item.get("views"), "favorites": item.get("favorites")},
+                )
                 inserted += 1
                 if args.enrich_limit and enriched >= args.enrich_limit:
                     continue
@@ -100,6 +109,14 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--enrich-limit", type=int, default=25)
     p.add_argument("--text")
     return p
+
+
+def compute_quality_score(item: dict) -> float:
+    views = item.get("views") or 0
+    favorites = item.get("favorites") or 0
+    view_score = min(1.0, views / 1000)
+    favorite_score = min(1.0, favorites / 100)
+    return round(max(view_score * 0.7, favorite_score * 0.9), 3)
 
 
 if __name__ == "__main__":

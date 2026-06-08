@@ -74,5 +74,5 @@ Requires `FLICKR_API_KEY`. See [docs/opportunity-database.md](docs/opportunity-d
 python3 scripts/factor_research_report.py
 ```
 
-The first version validates candidate photography factors against persisted `opportunity_records`.
+The first version validates candidate photography factors against `photo_observations + photo_context_enrichment + photo_quality_labels`.
 It does not train a model. Low sample size means factors remain `candidate`.

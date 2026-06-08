@@ -66,6 +66,16 @@ class OpportunityDatabase:
                   updated_at text not null,
                   primary key (source, source_photo_id)
                 );
+                create table if not exists photo_quality_labels (
+                  source text not null,
+                  source_photo_id text not null,
+                  quality_label integer not null,
+                  quality_score real not null,
+                  label_source text not null,
+                  payload_json text not null,
+                  updated_at text not null,
+                  primary key (source, source_photo_id)
+                );
                 create table if not exists cold_start_runs (
                   run_id text primary key,
                   place_key text not null,
@@ -135,6 +145,23 @@ class OpportunityDatabase:
                 ),
             )
 
+    def upsert_quality_label(self, source: str, source_photo_id: str, quality_label: int, quality_score: float, label_source: str, payload: dict[str, Any]) -> None:
+        with self.connect() as conn:
+            conn.execute(
+                """
+                insert into photo_quality_labels
+                (source, source_photo_id, quality_label, quality_score, label_source, payload_json, updated_at)
+                values (?, ?, ?, ?, ?, ?, ?)
+                on conflict(source, source_photo_id) do update set
+                  quality_label=excluded.quality_label,
+                  quality_score=excluded.quality_score,
+                  label_source=excluded.label_source,
+                  payload_json=excluded.payload_json,
+                  updated_at=excluded.updated_at
+                """,
+                (source, source_photo_id, quality_label, quality_score, label_source, json.dumps(payload, ensure_ascii=False), now_iso()),
+            )
+
     def insert_cold_start_run(self, run_id: str, place_key: str, status: str, payload: dict[str, Any]) -> None:
         with self.connect() as conn:
             conn.execute(
@@ -143,6 +170,6 @@ class OpportunityDatabase:
             )
 
     def stats(self) -> dict[str, int]:
-        tables = ["photo_observations", "osm_place_features", "photo_context_enrichment", "cold_start_runs"]
+        tables = ["photo_observations", "osm_place_features", "photo_context_enrichment", "photo_quality_labels", "cold_start_runs"]
         with self.connect() as conn:
             return {table: conn.execute(f"select count(*) from {table}").fetchone()[0] for table in tables}

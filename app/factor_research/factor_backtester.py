@@ -3,7 +3,7 @@ from __future__ import annotations
 import sqlite3
 from typing import Any
 
-from app.memory_store import DB_PATH
+from app.opportunity_database import DB_PATH
 
 
 def condition_matches(features: dict[str, Any], condition: dict[str, Any]) -> bool:
@@ -26,7 +26,15 @@ def backtest_factor(factor: dict[str, Any]) -> dict[str, Any]:
         return empty_result(factor)
     with sqlite3.connect(DB_PATH) as conn:
         try:
-            rows = conn.execute("select payload_json, score from opportunity_records").fetchall()
+            rows = conn.execute(
+                """
+                select e.feature_json, q.quality_label
+                from photo_context_enrichment e
+                join photo_quality_labels q
+                  on q.source = e.source and q.source_photo_id = e.source_photo_id
+                where e.status = 'enriched' and e.feature_json is not null
+                """
+            ).fetchall()
         except sqlite3.OperationalError:
             return empty_result(factor)
     total = len(rows)
@@ -35,12 +43,11 @@ def backtest_factor(factor: dict[str, Any]) -> dict[str, Any]:
     matches = 0
     positives = 0
     matched_positives = 0
-    for payload_json, score in rows:
+    for feature_json, quality_label in rows:
         import json
 
-        payload = json.loads(payload_json)
-        features = payload.get("photographic_features") or {}
-        positive = score >= 0.5
+        features = json.loads(feature_json)
+        positive = int(quality_label) == 1
         positives += int(positive)
         matched = all(condition_matches(features, condition) for condition in factor.get("conditions", []))
         matches += int(matched)
