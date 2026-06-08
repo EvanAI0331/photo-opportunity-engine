@@ -6,6 +6,7 @@ from fastapi import FastAPI
 
 from .memory_store import MemoryStore
 from .models import FeedbackRequest, LoopRunRequest, LoopStartRequest, OpportunityRequest, OpportunityResponse, ShootingHistoryRequest
+from .opportunity_database import OpportunityDatabase
 from .agent_runtime import AgentRuntimeError, run_photo_opportunity_agent
 from .opportunity_loop import loop
 from .orchestrator import run_opportunity_pipeline
@@ -13,6 +14,7 @@ from .orchestrator import run_opportunity_pipeline
 
 app = FastAPI(title="Photo Opportunity Engine", version="0.1.0")
 store = MemoryStore()
+opportunity_db = OpportunityDatabase()
 
 
 @app.get("/health")
@@ -96,6 +98,11 @@ async def loop_daily_morning(request: LoopRunRequest):
 @app.get("/memory/opportunities")
 async def memory_opportunities(limit: int = 20):
     return {"items": store.latest_opportunities(limit=limit)}
+
+
+@app.get("/opportunity-db/stats")
+async def opportunity_db_stats():
+    return opportunity_db.stats()
 
 
 @app.post("/feedback")

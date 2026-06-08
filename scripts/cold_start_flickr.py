@@ -1,0 +1,106 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import asyncio
+import json
+import uuid
+from datetime import date, datetime
+from pathlib import Path
+import sys
+
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from app.astronomy_connector import fetch_astronomy
+from app.flickr_connector import FlickrConnectorError
+from app.flickr_connector import search_geotagged_photos
+from app.historical_weather_connector import fetch_historical_weather
+from app.opportunity_database import OpportunityDatabase
+from app.opportunity_engine import build_features
+
+
+async def run(args: argparse.Namespace) -> int:
+    db = OpportunityDatabase()
+    run_id = f"cold_{uuid.uuid4().hex}"
+    inserted = 0
+    enriched = 0
+    failures = []
+    for page in range(1, args.pages + 1):
+        try:
+            photos = await search_geotagged_photos(
+                lat=args.lat,
+                lng=args.lng,
+                radius_km=args.radius_km,
+                min_taken_date=date.fromisoformat(args.start_date),
+                max_taken_date=date.fromisoformat(args.end_date),
+                page=page,
+                per_page=args.per_page,
+                text=args.text,
+            )
+        except FlickrConnectorError as exc:
+            payload = {"inserted": inserted, "enriched": enriched, "failure_state": "blocked_flickr_api_unavailable", "error": str(exc), "stats": db.stats()}
+            db.insert_cold_start_run(run_id, args.place_key, "blocked", payload)
+            print(json.dumps({"run_id": run_id, "status": "blocked", **payload}, ensure_ascii=False, indent=2))
+            return 2
+        for photo in photos.get("photo", []):
+            try:
+                lat = float(photo["latitude"])
+                lng = float(photo["longitude"])
+                taken_at = photo.get("datetaken")
+                if not taken_at:
+                    raise ValueError("missing datetaken")
+                item = {
+                    "source": "flickr",
+                    "source_photo_id": str(photo["id"]),
+                    "lat": lat,
+                    "lng": lng,
+                    "taken_at": taken_at,
+                    "views": int(photo["views"]) if str(photo.get("views", "")).isdigit() else None,
+                    "favorites": int(photo["favorites"]) if str(photo.get("favorites", "")).isdigit() else None,
+                    "owner_name": photo.get("ownername"),
+                    "tags": photo.get("tags"),
+                    "payload": photo,
+                }
+                db.upsert_photo_observation(item)
+                inserted += 1
+                if args.enrich_limit and enriched >= args.enrich_limit:
+                    continue
+                when = datetime.fromisoformat(taken_at)
+                weather = await fetch_historical_weather(lat, lng, when)
+                astronomy = await fetch_astronomy(lat, lng, when)
+                features = build_features(weather, astronomy, {}, [], when)
+                db.upsert_context_enrichment("flickr", str(photo["id"]), "enriched", weather, astronomy, features)
+                enriched += 1
+            except Exception as exc:
+                failures.append({"photo_id": photo.get("id"), "error": str(exc)})
+                if photo.get("id"):
+                    db.upsert_context_enrichment("flickr", str(photo["id"]), "failed", None, None, None, "context_enrichment_failed")
+        if page >= int(photos.get("pages") or page):
+            break
+    status = "completed" if not failures else "completed_with_failures"
+    payload = {"inserted": inserted, "enriched": enriched, "failures": failures[:50], "stats": db.stats()}
+    db.insert_cold_start_run(run_id, args.place_key, status, payload)
+    print(json.dumps({"run_id": run_id, "status": status, **payload}, ensure_ascii=False, indent=2))
+    return 0 if status == "completed" else 1
+
+
+def parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(description="Cold-start a photography opportunity database from Flickr metadata.")
+    p.add_argument("--place-key", required=True)
+    p.add_argument("--lat", type=float, required=True)
+    p.add_argument("--lng", type=float, required=True)
+    p.add_argument("--radius-km", type=float, default=2)
+    p.add_argument("--start-date", required=True)
+    p.add_argument("--end-date", required=True)
+    p.add_argument("--pages", type=int, default=1)
+    p.add_argument("--per-page", type=int, default=250)
+    p.add_argument("--enrich-limit", type=int, default=25)
+    p.add_argument("--text")
+    return p
+
+
+if __name__ == "__main__":
+    raise SystemExit(asyncio.run(run(parser().parse_args())))

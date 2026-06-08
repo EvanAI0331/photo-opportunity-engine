@@ -8,5 +8,7 @@ __pycache__/
 node_modules/
 data/*.sqlite3
 data/*.sqlite3-*
+data/photo_opportunity.sqlite3
+data/photo_opportunity.sqlite3-*
 dist/
 *.zip

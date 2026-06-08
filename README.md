@@ -49,3 +49,21 @@ npm run specx
 - `app/agent_runtime.py`: MiniMax-M3 Agent runtime, thinking disabled.
 
 The score engine is not the Agent. Final notification judgment belongs to the LLM-backed Agent runtime under the SpecX contract.
+
+## Cold-Start Opportunity Database
+
+```bash
+python3 scripts/cold_start_flickr.py \
+  --place-key sydney_opera_house \
+  --lat -33.8568 \
+  --lng 151.2153 \
+  --radius-km 2 \
+  --start-date 2021-06-08 \
+  --end-date 2026-06-08 \
+  --pages 1 \
+  --per-page 250 \
+  --enrich-limit 25 \
+  --text "Sydney Opera House"
+```
+
+Requires `FLICKR_API_KEY`. See [docs/opportunity-database.md](docs/opportunity-database.md).

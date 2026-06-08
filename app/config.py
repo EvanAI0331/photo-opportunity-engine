@@ -32,6 +32,11 @@ class AgentSettings:
     temperature: float
 
 
+@dataclass(frozen=True)
+class FlickrSettings:
+    api_key: str
+
+
 def get_agent_settings() -> AgentSettings:
     load_dotenv()
     return AgentSettings(
@@ -42,3 +47,8 @@ def get_agent_settings() -> AgentSettings:
         max_completion_tokens=int(os.getenv("MINIMAX_MAX_COMPLETION_TOKENS", "1200")),
         temperature=float(os.getenv("MINIMAX_TEMPERATURE", "0.2")),
     )
+
+
+def get_flickr_settings() -> FlickrSettings:
+    load_dotenv()
+    return FlickrSettings(api_key=os.getenv("FLICKR_API_KEY", ""))
