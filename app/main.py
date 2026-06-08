@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 import uuid
+from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
+from .factor_research.factor_reporter import build_factor_report
 from .memory_store import MemoryStore
 from .models import FeedbackRequest, LoopRunRequest, LoopStartRequest, OpportunityRequest, OpportunityResponse, ShootingHistoryRequest
 from .opportunity_database import OpportunityDatabase
@@ -16,11 +20,20 @@ from .orchestrator import run_opportunity_pipeline
 app = FastAPI(title="Photo Opportunity Engine", version="0.1.0")
 store = MemoryStore()
 opportunity_db = OpportunityDatabase()
+WEB_DIR = Path(__file__).resolve().parents[1] / "web"
+
+if WEB_DIR.exists():
+    app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
 
 
 @app.get("/health")
 async def health():
     return {"ok": True}
+
+
+@app.get("/app")
+async def frontend_app():
+    return FileResponse(WEB_DIR / "index.html")
 
 
 @app.post("/opportunity", response_model=OpportunityResponse)
@@ -106,6 +119,11 @@ async def memory_opportunities(limit: int = 20):
 @app.get("/opportunity-db/stats")
 async def opportunity_db_stats():
     return {**opportunity_db.stats(), "remaining_unenriched": remaining_unenriched_count()}
+
+
+@app.get("/factor-research/report")
+async def factor_research_report():
+    return build_factor_report()
 
 
 @app.post("/photo-library/enrichment/start")

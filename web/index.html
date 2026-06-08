@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Photo Opportunity Engine</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f766e'/%3E%3Ctext x='6' y='21' font-size='11' font-family='Arial' font-weight='700' fill='white'%3EPO%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">PO</div>
+        <div>
+          <h1>Photo Engine</h1>
+          <p>Location-Time-Subject</p>
+        </div>
+      </div>
+      <nav class="nav">
+        <button class="nav-item active" data-view="ops">Opportunities</button>
+        <button class="nav-item" data-view="research">Factor Research</button>
+        <button class="nav-item" data-view="evidence">Photo Evidence</button>
+        <button class="nav-item" data-view="loop">Loop State</button>
+      </nav>
+      <div class="sidebar-status">
+        <span class="status-dot" id="apiDot"></span>
+        <span id="apiStatus">Checking API</span>
+      </div>
+    </aside>
+
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Sydney Harbour opportunity workspace</p>
+          <h2 id="viewTitle">Precision Operations Console</h2>
+        </div>
+        <div class="controls">
+          <label>
+            Location
+            <select id="preset">
+              <option value="harbour">Sydney Harbour</option>
+              <option value="bondi">Bondi Beach</option>
+              <option value="manly">Manly Beach</option>
+            </select>
+          </label>
+          <label>
+            Subject
+            <select id="subject">
+              <option value="sunset_landscape">Sunset landscape</option>
+              <option value="sunrise_landscape">Sunrise landscape</option>
+              <option value="wildlife">Wildlife</option>
+            </select>
+          </label>
+          <button id="runCheck" class="primary">Run check</button>
+        </div>
+      </header>
+
+      <section id="opsView" class="view active">
+        <section class="hero-grid">
+          <div class="score-panel">
+            <div>
+              <p class="label">Opportunity score</p>
+              <div class="score-line">
+                <strong id="scoreValue">--</strong>
+                <span id="scoreStatus">not run</span>
+              </div>
+            </div>
+            <div class="score-meta">
+              <span id="windowValue">Window pending</span>
+              <span id="directionValue">Direction pending</span>
+            </div>
+            <p id="scoreReason" class="reason">Run a check to collect weather, astronomy, geo, spot, and user-style evidence.</p>
+          </div>
+
+          <div class="agent-panel">
+            <p class="label">Agent decision</p>
+            <h3 id="agentStatus">Waiting</h3>
+            <p id="agentMessage">The LLM-backed Agent has not been called yet.</p>
+            <div class="agent-meta">
+              <span id="agentSpot">Spot --</span>
+              <span id="agentLead">Lead --</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="ops-layout">
+          <div class="map-panel">
+            <div class="section-head">
+              <div>
+                <p class="label">Spot geometry</p>
+                <h3>Harbour sightlines</h3>
+              </div>
+              <span id="timeValue">current time</span>
+            </div>
+            <div class="map-canvas">
+              <div class="sun-cone"></div>
+              <div class="shoreline one"></div>
+              <div class="shoreline two"></div>
+              <button class="pin p1">Mrs M</button>
+              <button class="pin p2">Quay</button>
+              <button class="pin p3">Dawes</button>
+              <button class="pin p4">Kirribilli</button>
+              <button class="pin p5">Milsons</button>
+            </div>
+          </div>
+
+          <div class="feature-panel">
+            <div class="section-head">
+              <div>
+                <p class="label">Photographic features</p>
+                <h3>Evidence translated to photo language</h3>
+              </div>
+            </div>
+            <div id="featureRows" class="rows"></div>
+          </div>
+        </section>
+
+        <section class="bottom-grid">
+          <div>
+            <div class="section-head">
+              <div>
+                <p class="label">Connectors</p>
+                <h3>Evidence sources</h3>
+              </div>
+            </div>
+            <div id="connectorRows" class="connector-list"></div>
+          </div>
+          <div>
+            <div class="section-head">
+              <div>
+                <p class="label">Loop</p>
+                <h3>Recent persisted runs</h3>
+              </div>
+            </div>
+            <div id="loopRows" class="timeline"></div>
+          </div>
+        </section>
+      </section>
+
+      <section id="researchView" class="view research-view">
+        <section class="research-hero">
+          <div>
+            <p class="eyebrow">Factor Research Studio</p>
+            <h2>Which photography factors actually work?</h2>
+            <p>Validation is keyed by spot-photo samples, not loose photo rows.</p>
+          </div>
+          <button id="refreshResearch" class="secondary">Refresh report</button>
+        </section>
+        <section class="research-grid">
+          <div class="research-summary">
+            <p class="label">Photo library</p>
+            <div class="metric-row"><span>Spot-photo samples</span><strong id="sampleCount">--</strong></div>
+            <div class="metric-row"><span>Spot context rows</span><strong id="contextCount">--</strong></div>
+            <div class="metric-row"><span>Remaining enrichment</span><strong id="remainingCount">--</strong></div>
+            <div class="metric-row"><span>Validation unit</span><strong>spot-photo</strong></div>
+          </div>
+          <div id="factorCards" class="factor-cards"></div>
+        </section>
+      </section>
+
+      <section id="evidenceView" class="view placeholder-view">
+        <h2>Photo Evidence</h2>
+        <p>Open photo source counts, weak labels, and future user-photo strong labels will sit here.</p>
+      </section>
+
+      <section id="loopView" class="view placeholder-view">
+        <h2>Loop State</h2>
+        <p>Use this view for 15-minute checks, daily digest state, and notification feedback history.</p>
+      </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
