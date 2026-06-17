@@ -40,12 +40,12 @@ class FlickrSettings:
 def get_agent_settings() -> AgentSettings:
     load_dotenv()
     return AgentSettings(
-        api_key=os.getenv("MINIMAX_API_KEY", ""),
-        base_url=os.getenv("MINIMAX_BASE_URL", "https://api.minimaxi.com/v1").rstrip("/"),
-        model=os.getenv("MINIMAX_MODEL", "MiniMax-M3"),
-        thinking_type=os.getenv("MINIMAX_THINKING_TYPE", "disabled"),
-        max_completion_tokens=int(os.getenv("MINIMAX_MAX_COMPLETION_TOKENS", "1200")),
-        temperature=float(os.getenv("MINIMAX_TEMPERATURE", "0.2")),
+        api_key=os.getenv("AGENT_LLM_API_KEY", ""),
+        base_url=os.getenv("AGENT_LLM_BASE_URL", "").rstrip("/"),
+        model=os.getenv("AGENT_LLM_MODEL", ""),
+        thinking_type=os.getenv("AGENT_LLM_THINKING_TYPE", "disabled"),
+        max_completion_tokens=int(os.getenv("AGENT_LLM_MAX_COMPLETION_TOKENS", "1200")),
+        temperature=float(os.getenv("AGENT_LLM_TEMPERATURE", "0.2")),
     )
 
 

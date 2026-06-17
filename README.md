@@ -56,10 +56,10 @@ http://127.0.0.1:8001
 Configure `.env`:
 
 ```text
-MINIMAX_API_KEY=...
-MINIMAX_BASE_URL=https://api.minimaxi.com/v1
-MINIMAX_MODEL=MiniMax-M3
-MINIMAX_THINKING_TYPE=disabled
+AGENT_LLM_API_KEY=...
+AGENT_LLM_BASE_URL=...
+AGENT_LLM_MODEL=...
+AGENT_LLM_THINKING_TYPE=disabled
 ```
 
 `.env` is ignored by git and is not included in release packages.
@@ -87,7 +87,7 @@ Important files:
 
 - `app/orchestrator.py`: data collection, feature extraction, scoring, Agent packet.
 - `app/opportunity_engine.py`: photography features and opportunity scoring.
-- `app/agent_runtime.py`: MiniMax-M3 Agent runtime, thinking disabled.
+- `app/agent_runtime.py`: OpenAI-compatible Agent runtime.
 - `app/opportunity_loop.py`: manual checks, 15-minute loop, daily digest.
 - `app/memory_store.py`: user profile, accepted / ignored alerts, shooting history.
 - `app/opportunity_database.py`: photo evidence and factor research database.

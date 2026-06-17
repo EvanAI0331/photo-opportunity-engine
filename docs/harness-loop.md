@@ -51,6 +51,6 @@ Tables:
 
 ## Current Limitation
 
-The current system calls the LLM-backed Agent runtime when `MINIMAX_API_KEY` is configured. Notification delivery is still an explicit handoff step and must not be reported as completed until a real notification provider is connected.
+The current system calls the LLM-backed Agent runtime when `AGENT_LLM_API_KEY` is configured. Notification delivery is still an explicit handoff step and must not be reported as completed until a real notification provider is connected.
 
 The loop records connector errors and missing evidence in the persisted payload so blocked runs can be audited.

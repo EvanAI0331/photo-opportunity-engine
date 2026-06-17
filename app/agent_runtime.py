@@ -28,7 +28,11 @@ class AgentRuntimeError(RuntimeError):
 async def run_photo_opportunity_agent(agent_packet: dict[str, Any]) -> dict[str, Any]:
     settings = get_agent_settings()
     if not settings.api_key:
-        raise AgentRuntimeError("MINIMAX_API_KEY is not configured")
+        raise AgentRuntimeError("AGENT_LLM_API_KEY is not configured")
+    if not settings.base_url:
+        raise AgentRuntimeError("AGENT_LLM_BASE_URL is not configured")
+    if not settings.model:
+        raise AgentRuntimeError("AGENT_LLM_MODEL is not configured")
 
     payload = {
         "model": settings.model,
@@ -68,8 +72,8 @@ async def run_photo_opportunity_agent(agent_packet: dict[str, Any]) -> dict[str,
         decision["evidence_summary"] = [decision["evidence_summary"]]
     if decision.get("status") not in {"notify", "skip", "blocked", "passed"}:
         raise AgentRuntimeError(f"Agent returned invalid status: {decision.get('status')}")
-    decision["llm_provider"] = "minimax"
-    decision["llm_model"] = settings.model
+    decision["llm_provider"] = "configured"
+    decision["llm_model"] = "configured"
     decision["thinking_type"] = settings.thinking_type
     try:
         validated = AgentDecision.model_validate(decision).model_dump()
